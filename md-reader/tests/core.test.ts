@@ -335,5 +335,50 @@ test('img 的 data: 内联图片不受影响', () => {
   assert.ok(sanitizeHtml(`<img src="${src}">`).includes(src))
 })
 
+/*
+ * 复制按钮定位回归 —— v0.2.12 把按钮宿主移到 pre 顶部独立区域。
+ *
+ * 装机实测老版本（v0.2.11）按钮在视觉上"挤进"代码第一行：CSS 是
+ * `position: absolute; top: 6px;` 没错，但 pre 的 padding-top 只有 12px，
+ * 按钮高 ~22px，于是文字和按钮重叠。在长单行 pre 里就更明显：按钮
+ * 看起来像落在行内中间。
+ *
+ * 修法：把 pre 的 padding-top 抬到能完整容纳按钮 + 一段空隙的尺寸，
+ * 并通过 installCopyButtons 的产物校验：每个 pre 后必有一个
+ * .md-copy-host，且按钮已加 class、文本按 i18n 设置。
+ *
+ * 用 jsdom 跑 installCopyButtons 是因为它只依赖 DOM API，没有 React /
+ * Tauri 上下文，正好适合做定位不变量的回归。
+ */
+test('每个 pre / table 都挂上一个独立的复制按钮宿主', () => {
+  // installCopyButtons 是按需动态加载的，先 import 拿到引用
+  const modulePromise = import('../src/markdown/copyButtons')
+  return modulePromise.then(({ installCopyButtons }) => {
+    const root = document.createElement('article')
+    root.innerHTML = `
+      <pre><code>print("a")</code></pre>
+      <pre><code>line1\nline2\nline3</code></pre>
+      <table><tbody><tr><td>cell</td></tr></tbody></table>
+    `
+    const teardown = installCopyButtons(root, { copyLabel: '复制代码', copiedLabel: '已复制' })
+    const hosts = root.querySelectorAll('.md-copy-host')
+    assert.equal(hosts.length, 3, `应为 3 个宿主，实际 ${hosts.length}`)
+    for (const host of Array.from(hosts)) {
+      const btn = host.querySelector('.md-copy-btn')
+      assert.ok(btn, '宿主里缺按钮')
+      assert.equal(btn?.textContent, '复制代码')
+      // 按钮宿主必须挂在 pre / table 的直接子级位置，不能塞进 <code> 里
+      const parent = host.parentElement
+      assert.ok(parent, '宿主没父节点')
+      assert.ok(
+        parent?.tagName === 'PRE' || parent?.tagName === 'TABLE',
+        `宿主应挂在 pre / table 下，实际挂在 ${parent?.tagName}`,
+      )
+    }
+    teardown()
+    assert.equal(root.querySelectorAll('.md-copy-host').length, 0, 'teardown 后应清空宿主')
+  })
+})
+
 console.log(`\n${passed} 通过，${failed} 失败\n`)
 process.exit(failed > 0 ? 1 : 0)

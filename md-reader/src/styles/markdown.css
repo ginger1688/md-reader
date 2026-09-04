@@ -133,8 +133,10 @@
 }
 
 .markdown-body pre {
-  position: relative; /* 定位上下文：让 .md-copy-btn 用 absolute 浮在右上角 */
-  padding: 12px 14px;
+  position: relative; /* 定位上下文：让 .md-copy-host 用 absolute 浮在右上角 */
+  /* 顶部多留 26px 给复制按钮：按钮 ~22px 高 + 上下各 2px 空隙，
+     这样即便代码块只有一行也不会被按钮挡到。 */
+  padding: 26px 14px 12px;
   margin: 0 0 1em;
   overflow-x: auto;
   background: var(--bg-alt);
@@ -211,13 +213,22 @@
  *
  * 容器是 absolute，按钮是 absolute —— 容器自己加 padding 不影响宿主层的位置，
  * 而按钮也不会跟着内容文本一起滚动。挂在内部则会把代码块高度撑大。
+ *
+ * 关键约定：必须挂在 pre 的直接子级位置（installCopyButtons 用 appendChild 挂在 pre 末尾），
+ * 且 pre 必须有 position: relative —— 否则会跳到上层 article 或 viewport 右上角，
+ * 在代码块很多 / 文章很长时表现为按钮跑到屏幕外、或与正文重叠。
+ * v0.2.2 装机实测发现这个隐性约定漏过；本文件所有改 pre / table 排版的位置都要回查这条。
  */
 .md-copy-host {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  z-index: 1;
+  top: 4px;
+  right: 4px;
+  z-index: 5; /* 高于 hljs span 的样式优先级，避免被压在下面 */
   pointer-events: none;
+  /* 容器自身占位要缩到最小，否则 inline-size 会撑大。absolute 元素默认是 shrink-to-fit
+     但在某些 WebView2 版本里还是会按 inline-block 计算 —— 加个显式声明更稳。 */
+  display: block;
+  line-height: 0;
 }
 
 .md-copy-btn {
@@ -225,16 +236,18 @@
   padding: 2px 8px;
   font: inherit;
   font-size: 11px;
+  line-height: 1.4;
   color: var(--text-muted);
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  border: 1px solid var(--border);
+  /* 实色背景 + 边框：半透在某些 WebView2 版本里会糊到代码字符上，分不清按钮和文本。
+     改用接近主题色（bg-alt 微浅）的实色，确保按钮有独立视觉边界。 */
+  background: color-mix(in srgb, var(--bg) 96%, var(--bg-alt));
+  border: 1px solid var(--border-strong);
   border-radius: 4px;
   /*
-   * 半透默认可见：让用户知道有复制按钮，但不刺眼。
-   * hover 父元素 pre/table 或按钮自身 focus / copied 状态时变实色。
-   * 之前 opacity: 0 + 仅 hover 才显示的方案太隐蔽 —— 用户根本看不到有按钮。
+   * 默认 0.55 透明度：让按钮存在但不抢代码的注意力。
+   * hover 父元素 pre/table 或按钮自身 focus / copied 状态时变实色 1。
    */
-  opacity: 0.4;
+  opacity: 0.55;
   cursor: pointer;
   transition: opacity 120ms ease, color 120ms ease, background 120ms ease;
 }
