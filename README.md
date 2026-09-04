@@ -26,9 +26,6 @@
 
 ## 截图 · Screenshots
 
-> 以下为占位图，待替换为实际应用界面截图（建议 ≥1280×800）。
-> Placeholders — replace with real app captures (≥1280×800 recommended).
-
 ![主界面](docs/screenshots/main.png)
 ![大纲与查找](docs/screenshots/outline-search.png)
 
