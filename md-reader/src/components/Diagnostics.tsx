@@ -255,11 +255,6 @@ function readEffectTrace(): Check {
         headings?: number
         buttonsAtInstall?: number
         cleanedUp?: boolean
-        healCount?: number
-        healReason?: string
-        markSurvived?: boolean | null
-        contentWrites?: number
-        writeStacks?: string[]
       }
     | undefined
 
@@ -278,30 +273,10 @@ function readEffectTrace(): Check {
       : `被前置条件挡住了（doc=${trace.guardDoc} / 内容区 ref=${trace.guardArticle} / 滚动容器 ref=${trace.guardContainer}）`,
     `初始化：${trace.reachedInstall ? `跑了，标题 ${trace.headings} 条、当时装了 ${trace.buttonsAtInstall} 个按钮` : '没跑到'}`,
     `之后被拆掉：${trace.cleanedUp ? '是 —— 这就是按钮一个不剩的直接原因' : '否'}`,
-    (trace.healCount ?? 0) > 0
-      ? `内容被换掉后自动补回 ${trace.healCount} 次（判定原因：${trace.healReason}）`
-      : '内容被换掉后自动补回：0 次',
-    trace.markSurvived === null
-      ? '节点标记：没触发过补回，无从判断'
-      : trace.markSurvived
-        ? '节点标记还在 —— 是同一个节点的内容被重写了'
-        : '节点标记没了 —— 整个节点被换掉了',
-    (trace.contentWrites ?? 0) === 0
-      ? '内容写入：初始化之后一次都没被重写过'
-      : `内容写入：之后被重写了 ${trace.contentWrites} 次`,
-    ...(trace.writeStacks ?? []).map((stack) => `写入来源：${stack}`),
   ].join('；')
 
-  /*
-   * 补回过（healCount > 0）算 warn 而不是 ok：功能虽然被救回来了，
-   * 但说明仍有东西在反复冲掉正文，值得继续追。
-   */
   const status: Status =
-    !passed || !trace.reachedInstall || trace.cleanedUp
-      ? 'fail'
-      : (trace.healCount ?? 0) > 0 || (trace.contentWrites ?? 0) > 0
-        ? 'warn'
-        : 'ok'
+    !passed || !trace.reachedInstall || trace.cleanedUp ? 'fail' : 'ok'
 
   return { label: '初始化执行痕迹（决定性）', status, detail }
 }

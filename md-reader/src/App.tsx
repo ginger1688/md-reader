@@ -206,12 +206,13 @@ export default function App() {
     const container = scroller.current
 
     /*
-     * 执行痕迹（诊断用，定位完可整段删）。
+     * 执行痕迹：只记几个计数，不改变任何行为。
      *
-     * 这一段在真机上「看起来没生效」——大纲的 id 一个都找不到、复制按钮一个都没挂上，
-     * 但在 jsdom 里跑同样的代码 100% 正常（21/21 找到、9 个按钮都装上），
-     * 且两份完全不同的文档都是 100% 失败，排除了「文档内容特殊」的可能。
-     * 静态分析看不出差别，只能把每一步的结果记到 window 上，交给诊断面板读出来。
+     * 这段代码曾几何时在真机上「看起来没生效」——大纲的 id 一个都找不到、
+     * 复制按钮一个都没挂上，但 jsdom 里跑同样的逻辑 100% 正常。
+     * 最后查出是 React 19 每次重渲染都重写了整篇正文（见上面 articleHtml 的注释），
+     * 与这段代码本身无关。病根已除，这里只留一组计数器，
+     * 供诊断面板确认它跑过、跑到哪一步。
      */
     const trace = {
       guardDoc: !!doc,
@@ -221,161 +222,36 @@ export default function App() {
       headings: 0,
       buttonsAtInstall: 0,
       cleanedUp: false,
-      healCount: 0,
-      healReason: '',
-      markSurvived: null as boolean | null,
-      contentWrites: 0,
-      writeStacks: [] as string[],
     }
     ;(window as unknown as Record<string, unknown>).__mdReaderTrace = trace
 
-    if (!doc || !container) return
+    if (!doc || !article.current || !container) return
 
-    /*
-     * 自愈机制（v0.2.6）。
-     *
-     * v0.2.5 的诊断报告给出了决定性证据：这一段跑完之后按钮确实装上了 9 个、
-     * cleanup 也没被调用（不是被拆掉的），但稍后查询时按钮和标题 id 一个都不剩。
-     * 唯一合理的解释是 article 的内容在这之后被整体换掉了，而换法有两种：
-     *
-     *   ① 同一个节点被重写了 innerHTML —— 按钮和 id 一起被冲掉，节点还是原来那个
-     *   ② 整个节点被 React 换成了新节点 —— ref 已经指向新节点，但这个 effect 只
-     *      依赖 [doc]，不会重跑，于是新节点上永远是空的
-     *
-     * 两种都要防，所以做法不是「盯着当初那个节点」，而是「盯着 ref 当前指向的那个
-     * 节点」：只要它上面没有按钮，就照着 ref 重新补一遍。
-     * 敢这么做是因为 collectHeadings / installCopyButtons 都是幂等的
-     * （重复跑不会叠加，只会覆盖），代价只是多跑几十毫秒。
-     *
-     * 观察点放在滚动容器上而不是 article 上，正是为了同时抓住上面两种情况：
-     * article 整个被换掉时，挂在旧节点上的 observer 会随旧节点一起失效。
-     */
-    let installedOn: HTMLElement | null = null
-    let teardownButtons: () => void = () => {}
+    const articleEl = article.current
 
-    /*
-     * 直接取证（v0.2.7）：拦截内容写入，把调用栈留下来。
-     *
-     * 「按钮和标题 id 一起消失」猜了四轮没猜出来，改用守株待兔——
-     * 谁改内容就把谁的栈记下来。React 重设 innerHTML 也会从这里过，
-     * 所以能分清到底是 React 在重渲染，还是别的什么在动手。
-     *
-     * 注意：React 首次写入发生在 commit 阶段、早于这个 effect，
-     * 所以这里只抓得到「事后」的写入 —— 而这正是我们要找的那一刀。
-     */
-    const instrumented = new WeakSet<HTMLElement>()
-    const instrument = (node: HTMLElement) => {
-      if (instrumented.has(node)) return
-      instrumented.add(node)
+    if (inTauri) resolveImages(articleEl, doc.baseDir)
 
-      const record = (how: string) => {
-        trace.contentWrites += 1
-        if (trace.writeStacks.length >= 3) return
-        const stack = (new Error().stack ?? '(无调用栈)')
-          .split('\n')
-          .slice(1, 5)
-          .map((line) => line.trim())
-          .join(' ← ')
-        trace.writeStacks.push(`${how} ← ${stack}`)
-      }
+    // 复制按钮也是后置的：DOMPurify 不会让按钮跟着 markdown 一起过清洗，
+    // 所以得在 sanitize 之后命令式地给 pre / table 挂上去。
+    const collected = collectHeadings(articleEl)
+    trace.reachedInstall = true
+    trace.headings = collected.length
+    setHeadings(collected)
 
-      const desc = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML')
-      if (desc?.set) {
-        const nativeSet = desc.set
-        const nativeGet = desc.get
-        Object.defineProperty(node, 'innerHTML', {
-          configurable: true,
-          get(this: Element) {
-            return nativeGet ? nativeGet.call(this) : ''
-          },
-          set(this: Element, value: string) {
-            record('innerHTML=')
-            nativeSet.call(this, value)
-          },
-        })
-      }
-
-      const nativeReplace = node.replaceChildren.bind(node)
-      node.replaceChildren = ((...args: (Node | string)[]) => {
-        record('replaceChildren')
-        return nativeReplace(...args)
-      }) as typeof node.replaceChildren
-    }
-
-    const install = (root: HTMLElement, reason: string) => {
-      instrument(root)
-      teardownButtons()
-
-      if (inTauri) resolveImages(root, doc.baseDir)
-
-      // 复制按钮也是后置的：DOMPurify 不会让按钮跟着 markdown 一起过清洗，
-      // 所以得在 sanitize 之后命令式地给 pre / table 挂上去。
-      const collected = collectHeadings(root)
-      setHeadings(collected)
-
-      // 在 resolveImages 之后收集：这时拿到的是转换好的 asset 地址，
-      // 直接喂给灯箱就能用。
-      setImages(
-        [...root.querySelectorAll('img')].map((img) => {
-          const src = img.getAttribute('src') ?? ''
-          return { src, name: img.getAttribute('alt') || fileName(src) }
-        }),
-      )
-
-      teardownButtons = installCopyButtons(root, {
-        copyLabel: t('copy.code'),
-        copiedLabel: t('copy.copied'),
-      })
-
-      /*
-       * 给这个节点打个标记。重写 innerHTML 不会动到节点自身的属性，
-       * 所以标记还在 → 同一个节点、只是内容被重写；标记没了 → 整个节点被换掉了。
-       */
-      root.dataset.diagMark = String(Date.now())
-      installedOn = root
-
-      if (reason === 'first') {
-        trace.reachedInstall = true
-        trace.headings = collected.length
-        trace.buttonsAtInstall = root.querySelectorAll('.md-copy-btn').length
-      } else {
-        trace.healCount += 1
-        trace.healReason = reason
-      }
-    }
-
-    const first = article.current
-    if (!first) return
-    install(first, 'first')
-
-    const observer = new MutationObserver(() => {
-      if (trace.healCount >= 5) return
-      const node = article.current
-      if (!node || !document.body.contains(node)) return
-      // 没有 pre / table 的文档本来就不该有按钮，别白补
-      if (node.querySelectorAll('pre, table').length === 0) return
-      // 按钮还在就说明没被冲掉，直接跳过（自己刚装上的按钮也会触发这里）
-      if (node === installedOn && node.querySelectorAll('.md-copy-btn').length > 0) return
-      trace.markSurvived = node.dataset.diagMark !== undefined
-      install(node, node === installedOn ? '同一节点内容被重写' : '整个节点被换掉')
-    })
-    observer.observe(container, { childList: true, subtree: true })
-
-    /*
-     * 保险复查：打开文档后的头 600 毫秒再确认几次。
-     *
-     * observer 依赖 MutationObserver 的回调时机；已经猜错四轮了，
-     * 多加几刀兜底成本极低（幂等，且按钮还在就直接返回）。
-     */
-    const insurance = [0, 50, 200, 600].map((delay) =>
-      window.setTimeout(() => {
-        const node = article.current
-        if (!node || !document.body.contains(node)) return
-        if (node.querySelectorAll('pre, table').length === 0) return
-        if (node.querySelectorAll('.md-copy-btn').length > 0) return
-        install(node, `保险复查（${delay}ms）`)
-      }, delay),
+    // 在 resolveImages 之后收集：这时拿到的是转换好的 asset 地址，
+    // 直接喂给灯箱就能用。
+    setImages(
+      [...articleEl.querySelectorAll('img')].map((img) => {
+        const src = img.getAttribute('src') ?? ''
+        return { src, name: img.getAttribute('alt') || fileName(src) }
+      }),
     )
+
+    const teardownButtons = installCopyButtons(articleEl, {
+      copyLabel: t('copy.code'),
+      copiedLabel: t('copy.copied'),
+    })
+    trace.buttonsAtInstall = articleEl.querySelectorAll('.md-copy-btn').length
 
     const saved = readProgress(doc.source)
     const scrollable = container.scrollHeight - container.clientHeight
@@ -403,8 +279,6 @@ export default function App() {
      */
     return () => {
       trace.cleanedUp = true
-      observer.disconnect()
-      for (const id of insurance) window.clearTimeout(id)
       teardownButtons()
     }
   }, [doc])
