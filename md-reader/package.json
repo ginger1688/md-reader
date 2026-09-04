@@ -1,0 +1,42 @@
+{
+  "name": "md-reader",
+  "private": true,
+  "version": "0.2.10",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "test": "tsx tests/core.test.ts && tsx tests/react-innerhtml.test.ts",
+    "test:gfm": "tsx tests/gfm.test.ts",
+    "bench": "tsx tests/bench.ts",
+    "fixtures": "tsx tests/make-fixtures.ts",
+    "perf": "tsx tests/perf-cdp.ts",
+    "jitter": "tsx tests/jitter-cdp.ts"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-dialog": "^2",
+    "@tauri-apps/plugin-opener": "^2",
+    "dompurify": "^3.4.14",
+    "highlight.js": "^11.12.0",
+    "i18next": "^26.4.1",
+    "markdown-it": "^15.0.1",
+    "markdown-it-task-lists": "^2.1.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-i18next": "^17.0.13"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "@types/markdown-it": "^14.2.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "jsdom": "^29.1.1",
+    "tsx": "^4.23.13",
+    "typescript": "~5.8.3",
+    "vite": "^7.0.4"
+  }
+}

@@ -1,0 +1,257 @@
+/*
+ * 渲染结果的排版规则。
+ * 只作用于 .markdown-body 内部，避免污染界面自身的样式。
+ * 所有颜色都走主题变量，切换配色时这里不需要任何改动。
+ */
+
+.markdown-body {
+  /*
+   * 阅读宽度：把 --reader-width 让出来给 App.css 驱动。
+   * 这里留 860px 作为 fallback（变量未定义时使用，与 PRD §3.3 的硬上限对齐）。
+   * min(..., 100%) 是为了在窗口极窄时也不会越界 —— 与 App.css 那条规则同理。
+   */
+  max-width: min(var(--reader-width, 860px), 100%);
+  margin: 0 auto;
+  font-size: 16px;
+  line-height: 1.75;
+  overflow-wrap: break-word;
+}
+
+.markdown-body > *:first-child {
+  margin-top: 0;
+}
+
+/* ---------- 标题 ---------- */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  margin: 1.6em 0 0.6em;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.markdown-body h1 {
+  padding-bottom: 0.3em;
+  font-size: 1.9em;
+  border-bottom: 1px solid var(--border);
+}
+
+.markdown-body h2 {
+  padding-bottom: 0.3em;
+  font-size: 1.5em;
+  border-bottom: 1px solid var(--border);
+}
+
+.markdown-body h3 {
+  font-size: 1.25em;
+}
+.markdown-body h4 {
+  font-size: 1.05em;
+}
+.markdown-body h5 {
+  font-size: 0.95em;
+}
+.markdown-body h6 {
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+/* ---------- 文本块 ---------- */
+.markdown-body p {
+  margin: 0 0 1em;
+}
+
+.markdown-body blockquote {
+  margin: 1em 0;
+  padding: 0 1em;
+  color: var(--text-muted);
+  border-left: 4px solid var(--border-strong);
+}
+
+.markdown-body hr {
+  height: 1px;
+  margin: 1.8em 0;
+  background: var(--border);
+  border: none;
+}
+
+.markdown-body a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.markdown-body a:hover {
+  text-decoration: underline;
+}
+
+/* ---------- 列表 ---------- */
+.markdown-body ul,
+.markdown-body ol {
+  margin: 0 0 1em;
+  padding-left: 1.8em;
+}
+
+.markdown-body li + li {
+  margin-top: 0.25em;
+}
+
+.markdown-body li > ul,
+.markdown-body li > ol {
+  margin: 0.25em 0 0;
+}
+
+/* GFM 任务列表：markdown-it-task-lists 生成的类名 */
+.markdown-body ul.contains-task-list {
+  padding-left: 0;
+  list-style: none;
+}
+
+.markdown-body li.task-list-item {
+  display: flex;
+  gap: 0.5em;
+  align-items: baseline;
+}
+
+.markdown-body li.task-list-item input {
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+/* ---------- 代码 ---------- */
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, 'Cascadia Code', Consolas, monospace;
+  font-size: 0.88em;
+}
+
+.markdown-body :not(pre) > code {
+  padding: 0.15em 0.4em;
+  background: var(--bg-alt);
+  border-radius: 4px;
+}
+
+.markdown-body pre {
+  position: relative; /* 定位上下文：让 .md-copy-btn 用 absolute 浮在右上角 */
+  padding: 12px 14px;
+  margin: 0 0 1em;
+  overflow-x: auto;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  line-height: 1.55;
+}
+
+.markdown-body pre code {
+  background: none;
+}
+
+/* ---------- 表格 ---------- */
+/* width: fit-content 让窄表不被拉满，overflow-x 让宽表可横向滚动。
+   「全部显示」的自适应换行属于表格增强模块，见 PRD §4.13。 */
+.markdown-body table {
+  position: relative; /* 定位上下文：让 .md-copy-btn 用 absolute 浮在右上角 */
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 1em;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.markdown-body th,
+.markdown-body td {
+  padding: 6px 13px;
+  border: 1px solid var(--border-strong);
+}
+
+.markdown-body th {
+  font-weight: 600;
+  background: var(--bg-alt);
+}
+
+.markdown-body tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--bg-alt) 60%, var(--bg));
+}
+
+/* ---------- 图片 ---------- */
+.markdown-body img {
+  max-width: 100%;
+  border-radius: 6px;
+}
+
+/* 图片加载失败后的占位块。由 images.ts 把 <img> 整体替换成这个 span：
+   img 是替换元素，靠 CSS 改它自己的样式管不住 alt 的显示行为。 */
+.markdown-body .broken-image {
+  display: inline-block;
+  max-width: 100%;
+  padding: 6px 10px;
+  overflow: hidden;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.85em;
+  color: var(--text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--bg-alt);
+  border: 1px dashed var(--border-strong);
+  border-radius: 6px;
+}
+
+/* ---------- 键盘导航可达性 ---------- */
+.markdown-body a:focus-visible,
+.markdown-body input:focus-visible,
+.markdown-body button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/*
+ * 复制按钮宿主：absolute 定位挂在 pre / table 的右上角。
+ *
+ * 容器是 absolute，按钮是 absolute —— 容器自己加 padding 不影响宿主层的位置，
+ * 而按钮也不会跟着内容文本一起滚动。挂在内部则会把代码块高度撑大。
+ */
+.md-copy-host {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.md-copy-btn {
+  pointer-events: auto;
+  padding: 2px 8px;
+  font: inherit;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  /*
+   * 半透默认可见：让用户知道有复制按钮，但不刺眼。
+   * hover 父元素 pre/table 或按钮自身 focus / copied 状态时变实色。
+   * 之前 opacity: 0 + 仅 hover 才显示的方案太隐蔽 —— 用户根本看不到有按钮。
+   */
+  opacity: 0.4;
+  cursor: pointer;
+  transition: opacity 120ms ease, color 120ms ease, background 120ms ease;
+}
+
+.markdown-body pre:hover .md-copy-btn,
+.markdown-body table:hover .md-copy-btn,
+.md-copy-btn:focus-visible,
+.md-copy-btn.copied {
+  opacity: 1;
+}
+
+.md-copy-btn:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.md-copy-btn.copied {
+  color: var(--accent);
+  border-color: var(--accent);
+}

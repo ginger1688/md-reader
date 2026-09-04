@@ -1,0 +1,95 @@
+/*
+ * 图片灯箱。
+ *
+ * 背景直接用 --bg 而不是常见的中性黑：PRD 要求灯箱跟随当前配色，
+ * 在「纸感」「护眼」这类暖色 / 低饱和主题下，突然切到纯黑背景会很跳。
+ */
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.lightbox-stage {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  cursor: grab;
+}
+
+.lightbox-stage:active {
+  cursor: grabbing;
+}
+
+.lightbox-image {
+  /* 由 JS 按容器尺寸算好缩放，这里不能再加 max-width，否则会二次约束 */
+  max-width: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.lightbox-bar {
+  display: flex;
+  flex: none;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 14px;
+  font-size: 12px;
+  background: var(--bg-alt);
+  border-top: 1px solid var(--border);
+}
+
+.lightbox-name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lightbox-meta {
+  flex: none;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lightbox-actions {
+  display: flex;
+  flex: none;
+  gap: 6px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.lightbox-count {
+  padding: 0 4px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lightbox-actions button {
+  min-width: 28px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.lightbox-actions button:hover {
+  background: var(--hover);
+  border-color: var(--border-strong);
+}
+
+.lightbox-actions button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}

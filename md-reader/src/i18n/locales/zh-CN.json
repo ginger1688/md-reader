@@ -1,0 +1,79 @@
+{
+  "app": {
+    "title": "MD 阅读器"
+  },
+  "toolbar": {
+    "openFile": "打开文件",
+    "openFolder": "打开文件夹",
+    "colorTheme": "配色",
+    "scheme": "外观",
+    "language": "语言",
+    "readerWidth": "宽度",
+    "readerWidthPercent": "{{percent}}%"
+  },
+  "action": {
+    "backToTop": "回到顶部"
+  },
+  "outline": {
+    "title": "大纲",
+    "empty": "这篇文档没有标题",
+    "expand": "展开",
+    "collapse": "折叠"
+  },
+  "folder": {
+    "title": "文件夹",
+    "empty": "点顶部「打开文件夹」选一个目录，会在这里列出 .md/.markdown/.txt 文件。",
+    "noEntries": "这个目录里没有 .md / .markdown / .txt 文件。"
+  },
+  "sidebar": {
+    "outline": "大纲",
+    "folder": "文件夹"
+  },
+  "find": {
+    "placeholder": "查找",
+    "noMatch": "无匹配",
+    "previous": "上一处",
+    "next": "下一处",
+    "caseSensitive": "区分大小写",
+    "wholeWord": "全词匹配",
+    "close": "关闭查找"
+  },
+  "lightbox": {
+    "previous": "上一张",
+    "next": "下一张",
+    "zoomIn": "放大",
+    "zoomOut": "缩小",
+    "fit": "适应窗口",
+    "actualSize": "原始大小",
+    "close": "关闭"
+  },
+  "copy": {
+    "code": "复制代码",
+    "table": "复制表格",
+    "copied": "已复制"
+  },
+  "empty": {
+    "title": "还没有打开任何文件",
+    "hint": "点顶部工具栏的「打开文件」按钮，选一个 .md、.markdown 或 .txt 文件。"
+  },
+  "theme": {
+    "classic": "经典",
+    "paper": "纸感",
+    "soft": "护眼",
+    "midnight": "极夜"
+  },
+  "scheme": {
+    "light": "浅色",
+    "dark": "深色"
+  },
+  "language": {
+    "zh-CN": "简体中文",
+    "en-US": "English"
+  },
+  "status": {
+    "notUtf8": "这个文件不是 UTF-8 编码。如果它是一份 GBK 编码的旧文档，可以：",
+    "openAsGbk": "按 GBK 打开",
+    "decodeFailed": "按 GBK 也无法解码。这个文件可能既不是 UTF-8 也不是 GBK，或者根本不是文本文件。",
+    "readFailed": "读取失败：{{message}}"
+  }
+}

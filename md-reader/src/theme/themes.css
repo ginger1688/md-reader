@@ -1,0 +1,212 @@
+/*
+ * 主题变量：4 套配色 × 明暗 = 8 种组合。
+ *
+ * 每个组合只给 4 个基色（背景 / 次级背景 / 正文 / 强调色），其余层次色统一由
+ * 末尾的 [data-scheme] 规则用 color-mix 派生。这样同一套配色在明暗下自动保持
+ * 一致的层次关系，改一个基色不用手动同步七八个配套色。
+ *
+ * 基色取值见 docs/PRD.md §3.7。派生比例 70% 是算过对比度的：正文色按 70% 混进
+ * 背景后，在 8 种组合下与背景的对比度都 ≥ 5:1，满足 WCAG AA。
+ */
+
+:root {
+  color-scheme: light dark;
+}
+
+/* ---------- 经典 classic：GitHub 风格，中性灰底 ---------- */
+[data-scheme='light'][data-theme='classic'] {
+  --bg: #ffffff;
+  --bg-alt: #f6f8fa;
+  --text: #1f2328;
+  --accent: #0969da;
+}
+[data-scheme='dark'][data-theme='classic'] {
+  --bg: #0d1117;
+  --bg-alt: #161b22;
+  --text: #e6edf3;
+  --accent: #4493f8;
+}
+
+/* ---------- 纸感 paper：暖米色，长时间阅读不刺眼 ---------- */
+[data-scheme='light'][data-theme='paper'] {
+  --bg: #faf7f0;
+  --bg-alt: #f0ebe0;
+  --text: #2e2a24;
+  --accent: #b45309;
+}
+[data-scheme='dark'][data-theme='paper'] {
+  --bg: #23201b;
+  --bg-alt: #2e2a24;
+  --text: #ede8df;
+  --accent: #d9a05b;
+}
+
+/* ---------- 护眼 soft：低饱和绿，降低视觉疲劳 ---------- */
+[data-scheme='light'][data-theme='soft'] {
+  --bg: #f5f7f2;
+  --bg-alt: #e9ede4;
+  --text: #2c3328;
+  --accent: #4f7942;
+}
+[data-scheme='dark'][data-theme='soft'] {
+  --bg: #1a1f1a;
+  --bg-alt: #232a23;
+  --text: #dde5d8;
+  --accent: #7fa96b;
+}
+
+/* ---------- 极夜 midnight：高对比冷蓝，暗光环境下清晰 ---------- */
+[data-scheme='light'][data-theme='midnight'] {
+  --bg: #f7f8fa;
+  --bg-alt: #eef0f5;
+  --text: #10131a;
+  --accent: #4c6fff;
+}
+[data-scheme='dark'][data-theme='midnight'] {
+  --bg: #0b0e14;
+  --bg-alt: #151a24;
+  --text: #c8d0e0;
+  --accent: #6b8afd;
+}
+
+/* ---------- 派生层次色 ---------- */
+[data-scheme] {
+  --text-muted: color-mix(in srgb, var(--text) 70%, var(--bg));
+  --border: color-mix(in srgb, var(--text) 18%, var(--bg));
+  --border-strong: color-mix(in srgb, var(--text) 34%, var(--bg));
+  --hover: color-mix(in srgb, var(--accent) 12%, var(--bg));
+  --selection: color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+/* 错误提示色只分明暗：红是语义色，跟着配色走反而会在「纸感」下失去警示意味。 */
+[data-scheme='light'] {
+  --danger: #cf222e;
+}
+[data-scheme='dark'] {
+  --danger: #f85149;
+}
+
+/* ---------- 代码高亮 token 色 ----------
+ *
+ * 集中放在一节而不是散进各配色块里：8 套需要横向对比着调，
+ * 分开放反而看不出「护眼的 keyword 是不是比纸感更饱和」这类问题。
+ * 类名映射见 styles/hljs.css。
+ *
+ * 取值原则：
+ * - comment / meta 永远是最低饱和的，别和正文抢注意力
+ * - keyword 用红或橙（暖色在代码里最容易定位）
+ * - string / number 用蓝绿系，与 keyword 拉开色相
+ * - 每套配色在明暗下都保证与 --bg-alt（代码背景）的对比度 ≥ 4.5:1
+ */
+
+/* 经典 classic —— 直接取 GitHub Light / Dark 的官方色值 */
+[data-scheme='light'][data-theme='classic'] {
+  --hl-comment: #6e7781;
+  --hl-keyword: #cf222e;
+  --hl-string: #0a3069;
+  --hl-number: #0550ae;
+  --hl-function: #8250df;
+  --hl-type: #953800;
+  --hl-variable: #953800;
+  --hl-tag: #116329;
+  --hl-meta: #6e7781;
+  --hl-symbol: #0550ae;
+  --hl-deletion: #cf222e;
+}
+[data-scheme='dark'][data-theme='classic'] {
+  --hl-comment: #8b949e;
+  --hl-keyword: #ff7b72;
+  --hl-string: #a5d6ff;
+  --hl-number: #79c0ff;
+  --hl-function: #d2a8ff;
+  --hl-type: #ffa657;
+  --hl-variable: #ffa657;
+  --hl-tag: #7ee787;
+  --hl-meta: #8b949e;
+  --hl-symbol: #79c0ff;
+  --hl-deletion: #ffa198;
+}
+
+/* 纸感 paper —— 整体偏暖，keyword 用砖红而非鲜红，避免破坏纸的质感 */
+[data-scheme='light'][data-theme='paper'] {
+  --hl-comment: #8a8172;
+  --hl-keyword: #a2432b;
+  --hl-string: #5c4a1f;
+  --hl-number: #8a5a00;
+  --hl-function: #7a4e8c;
+  --hl-type: #8a5a00;
+  --hl-variable: #8a5a00;
+  --hl-tag: #3f6b35;
+  --hl-meta: #8a8172;
+  --hl-symbol: #8a5a00;
+  --hl-deletion: #a2432b;
+}
+[data-scheme='dark'][data-theme='paper'] {
+  --hl-comment: #9a9186;
+  --hl-keyword: #e8836b;
+  --hl-string: #e0c89a;
+  --hl-number: #e5b567;
+  --hl-function: #d2a8d0;
+  --hl-type: #e5b567;
+  --hl-variable: #e5b567;
+  --hl-tag: #9bc48a;
+  --hl-meta: #9a9186;
+  --hl-symbol: #e5b567;
+  --hl-deletion: #e8836b;
+}
+
+/* 护眼 soft —— 饱和度刻意压低，这是「护眼」的核心，不要为了好看调回来 */
+[data-scheme='light'][data-theme='soft'] {
+  --hl-comment: #6b7a63;
+  --hl-keyword: #8a5a3c;
+  --hl-string: #3f5a2f;
+  --hl-number: #4a6b35;
+  --hl-function: #6a5a8a;
+  --hl-type: #4a6b35;
+  --hl-variable: #4a6b35;
+  --hl-tag: #2f5c28;
+  --hl-meta: #6b7a63;
+  --hl-symbol: #4a6b35;
+  --hl-deletion: #8a5a3c;
+}
+[data-scheme='dark'][data-theme='soft'] {
+  --hl-comment: #8a9980;
+  --hl-keyword: #c89a7a;
+  --hl-string: #a8c89a;
+  --hl-number: #b5d09a;
+  --hl-function: #b0a0c8;
+  --hl-type: #b5d09a;
+  --hl-variable: #b5d09a;
+  --hl-tag: #9bc48a;
+  --hl-meta: #8a9980;
+  --hl-symbol: #b5d09a;
+  --hl-deletion: #c89a7a;
+}
+
+/* 极夜 midnight —— 高对比，暗光环境下要能一眼分辨 token */
+[data-scheme='light'][data-theme='midnight'] {
+  --hl-comment: #5a6370;
+  --hl-keyword: #b02a37;
+  --hl-string: #0b4f8a;
+  --hl-number: #0052cc;
+  --hl-function: #7b3fbf;
+  --hl-type: #7a4a00;
+  --hl-variable: #7a4a00;
+  --hl-tag: #0b6b3a;
+  --hl-meta: #5a6370;
+  --hl-symbol: #0052cc;
+  --hl-deletion: #b02a37;
+}
+[data-scheme='dark'][data-theme='midnight'] {
+  --hl-comment: #7a8699;
+  --hl-keyword: #ff6b6b;
+  --hl-string: #7fd1ff;
+  --hl-number: #6ba8ff;
+  --hl-function: #c792ea;
+  --hl-type: #ffb86c;
+  --hl-variable: #ffb86c;
+  --hl-tag: #5dd98c;
+  --hl-meta: #7a8699;
+  --hl-symbol: #6ba8ff;
+  --hl-deletion: #ff6b6b;
+}

@@ -1,0 +1,165 @@
+/*
+ * 一键诊断面板的样式（Ctrl+Shift+D）。
+ *
+ * 定位：居中卡片 + 半透明遮罩。遮罩不是为了好看，是为了在面板打开时压暗
+ * 正文，让「诊断结果」和「被诊断的内容」在视觉上分开，避免看串。
+ *
+ * 颜色全部走主题变量，切配色时这里不用动。
+ */
+
+.diagnostics-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  background: color-mix(in srgb, var(--text) 22%, transparent);
+}
+
+.diagnostics {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  width: min(760px, 92vw);
+  max-height: 82vh;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  box-shadow: 0 8px 40px color-mix(in srgb, var(--text) 30%, transparent);
+  transform: translate(-50%, -50%);
+}
+
+/* ---------- 头部 ---------- */
+.diagnostics-head {
+  display: flex;
+  flex: none;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.diagnostics-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.diagnostics-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.diagnostics-head .diagnostics-hint {
+  margin-left: auto;
+}
+
+.diagnostics-close {
+  flex: none;
+  padding: 2px 8px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.diagnostics-close:hover {
+  color: var(--text);
+  background: var(--hover);
+  border-color: var(--border);
+}
+
+/* ---------- 结果列表 ---------- */
+.diagnostics-body {
+  flex: 1;
+  min-height: 0;
+  padding: 6px 14px;
+  overflow-y: auto;
+}
+
+/*
+ * 三列网格：状态标签 / 检查项 / 详情。
+ * 固定前两列宽度，详情列吃掉剩余空间 —— 详情里常出现长 URL，
+ * 让它独占一列并允许换行，比让整行挤在一起好读。
+ */
+.diagnostics-row {
+  display: grid;
+  grid-template-columns: 36px 210px 1fr;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.diagnostics-row:last-child {
+  border-bottom: none;
+}
+
+.diagnostics-mark {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.diagnostics-row.ok .diagnostics-mark {
+  color: var(--accent);
+}
+
+.diagnostics-row.warn .diagnostics-mark {
+  color: #c8811a;
+}
+
+.diagnostics-row.fail .diagnostics-mark {
+  color: var(--danger);
+}
+
+.diagnostics-label {
+  overflow: hidden;
+  font-weight: 500;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diagnostics-detail {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- 底部 ---------- */
+.diagnostics-foot {
+  display: flex;
+  flex: none;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.diagnostics-foot button {
+  flex: none;
+  padding: 5px 14px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--bg);
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.diagnostics-foot button:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.diagnostics-foot button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}

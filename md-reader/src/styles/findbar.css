@@ -1,0 +1,75 @@
+.findbar {
+  display: flex;
+  flex: none;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 10px;
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+}
+
+.find-input {
+  flex: none;
+  width: 220px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.find-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.find-count {
+  min-width: 62px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.findbar button {
+  min-width: 26px;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.findbar button:hover:not(:disabled) {
+  background: var(--hover);
+  border-color: var(--border-strong);
+}
+
+.findbar button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* 开启状态的开关：用实心强调色，一眼能看出哪两个筛选项生效了 */
+.findbar .find-toggle.on {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.findbar button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/*
+ * 查找高亮用 CSS Custom Highlight API（见 find/index.ts）：
+ * ::highlight() 伪元素不在 DOM 树里，CSS 变量继承链是断的，
+ * 所以 var(--accent) 在这里失效 —— 颜色必须用绝对色值。
+ * 实际的色值由 theme/index.ts 的 applyTheme 注入到
+ * <style id="find-highlight-style"> 里，跟着主题一起切。
+ */

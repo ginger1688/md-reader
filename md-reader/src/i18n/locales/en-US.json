@@ -1,0 +1,79 @@
+{
+  "app": {
+    "title": "MD Reader"
+  },
+  "toolbar": {
+    "openFile": "Open file",
+    "openFolder": "Open folder",
+    "colorTheme": "Palette",
+    "scheme": "Appearance",
+    "language": "Language",
+    "readerWidth": "Width",
+    "readerWidthPercent": "{{percent}}%"
+  },
+  "action": {
+    "backToTop": "Back to top"
+  },
+  "outline": {
+    "title": "Outline",
+    "empty": "No headings in this document",
+    "expand": "Expand",
+    "collapse": "Collapse"
+  },
+  "folder": {
+    "title": "Folder",
+    "empty": "Click \"Open folder\" in the top bar to pick a directory — its files will appear here.",
+    "noEntries": "No .md / .markdown / .txt files in this directory."
+  },
+  "sidebar": {
+    "outline": "Outline",
+    "folder": "Folder"
+  },
+  "find": {
+    "placeholder": "Find",
+    "noMatch": "No matches",
+    "previous": "Previous match",
+    "next": "Next match",
+    "caseSensitive": "Match case",
+    "wholeWord": "Whole word",
+    "close": "Close find"
+  },
+  "lightbox": {
+    "previous": "Previous image",
+    "next": "Next image",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "fit": "Fit to window",
+    "actualSize": "Actual size",
+    "close": "Close"
+  },
+  "copy": {
+    "code": "Copy code",
+    "table": "Copy table",
+    "copied": "Copied"
+  },
+  "empty": {
+    "title": "No file open",
+    "hint": "Use the \"Open file\" button in the top bar to pick a .md, .markdown or .txt file."
+  },
+  "theme": {
+    "classic": "Classic",
+    "paper": "Paper",
+    "soft": "Soft",
+    "midnight": "Midnight"
+  },
+  "scheme": {
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "language": {
+    "zh-CN": "简体中文",
+    "en-US": "English"
+  },
+  "status": {
+    "notUtf8": "This file is not UTF-8 encoded. If it's an older GBK-encoded document, you can:",
+    "openAsGbk": "Open as GBK",
+    "decodeFailed": "Decoding as GBK also failed. The file may be neither UTF-8 nor GBK, or not a text file at all.",
+    "readFailed": "Failed to read: {{message}}"
+  }
+}

@@ -1,0 +1,495 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  /* 窗口级滚动条必须关掉：它是 .content 之外第二个可能引起宽度震荡的滚动条。
+     整个布局是「顶栏 + 弹性主体 + 内部滚动」，body 本身永远不该滚。 */
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--selection);
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ---------- 顶栏 ---------- */
+.titlebar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 14px;
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+
+.doc-name {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 非 UTF-8 文档的编码标记 */
+.doc-encoding {
+  flex: none;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg));
+  border-radius: 4px;
+}
+
+.controls {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.controls label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.controls button,
+.controls select {
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.controls button:hover,
+.controls select:hover {
+  background: var(--hover);
+  border-color: var(--border-strong);
+}
+
+.controls button:focus-visible,
+.controls select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ---------- 主体：大纲侧栏 + 内容区 ---------- */
+.body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  /* min-height: 0 是关键：不写的话 flex 子项会被内容撑高，滚动条不会出现 */
+  min-height: 0;
+}
+
+/* 阅读进度条：贴在内容区顶部，横跨整个宽度 */
+.progress-track {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 10;
+  height: 2px;
+  pointer-events: none;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.sidebar {
+  flex: none;
+  width: 240px;
+  overflow-y: auto;
+  background: var(--bg-alt);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+/* tab 行：固定在侧栏顶部，两个等宽按钮 */
+.sidebar-tabs {
+  display: flex;
+  flex: none;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-tab {
+  flex: 1;
+  padding: 8px 4px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+
+.sidebar-tab:hover {
+  color: var(--text);
+}
+
+.sidebar-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+.sidebar-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* pane 之间切换不卸载，只切 hidden —— 切回去时不需要重新 invoke list_directory，
+   也不需要重做 Outline 的折叠/高亮 */
+.sidebar-pane {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* 同 .content：预留滚动条槽位，避免大纲条目因滚动条出没而反复重排 */
+  scrollbar-gutter: stable;
+}
+
+.content {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding: 24px 32px 64px;
+  overflow: auto;
+  /*
+   * ★ 预留滚动条槽位（scrollbar-gutter: stable）★
+   *
+   * 少了这一行会发生「滚动条震荡」，表现是滚到某一处后**整个窗口持续抖动**：
+   *
+   *   正文略高于可视区 → 竖向滚动条出现 → 可用宽度少掉 ~15px
+   *   → 文字重排、总高度变矮 → 滚动条又不需要了、消失
+   *   → 宽度涨回来 → 重排后高度又超了 → 滚动条再出现 → ……
+   *
+   * 每循环一次整篇正文就要完整重排一遍，而且永不收敛。
+   * 在桌面窗口里滚动条反复闪现极其显眼，看起来就像「整个窗口在抖」。
+   * 内容高度刚好卡在临界值附近时最容易触发，所以往往只在特定文档、
+   * 滚到特定位置才出现（本次是 GBK 样例滚到底部）。
+   *
+   * stable 让滚动条无论出不出都占着同一个槽位，可用宽度恒定，
+   * 上面那个循环从第一步就无从发生。
+   */
+  scrollbar-gutter: stable;
+}
+
+/*
+ * 阅读宽度：用 CSS 变量驱动，让顶栏的 select 切档时直接改这一处。
+ * min(...%, 100%) 是为了在窗口极窄时也不会比父容器宽 —— 没这个保护，
+ * 切到 60% 但窗口只有 200px 时，浏览器会把 markdown-body 算成 120px，
+ * 此时它确实更窄了，但用户感知是「窄到没法读」而不是「我想读得专注」。
+ * 内容本身的换行靠 word-wrap / table-layout，不靠宽度百分比。
+ */
+.markdown-body {
+  max-width: min(var(--reader-width, 100%), 100%);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ---------- 大纲 ---------- */
+.outline {
+  padding: 12px 8px;
+}
+
+.outline-head {
+  padding: 0 8px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.outline ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.outline-row {
+  display: flex;
+  align-items: flex-start;
+}
+
+.outline-twisty {
+  flex: none;
+  width: 16px;
+  padding: 0;
+  font-size: 10px;
+  line-height: 24px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 120ms ease;
+}
+
+.outline-twisty.collapsed {
+  transform: rotate(-90deg);
+}
+
+.outline-twisty.placeholder {
+  cursor: default;
+}
+
+.outline-item {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 6px;
+  overflow: hidden;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.outline-item:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+
+.outline-item.active {
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--hover);
+}
+
+/* 层级缩进。位移加在三角箭头上，标题项跟着 flex 一起右移 */
+.outline-row.level-1 .outline-item {
+  font-weight: 600;
+  color: var(--text);
+}
+.outline-row.level-2 .outline-twisty {
+  margin-left: 12px;
+}
+.outline-row.level-3 .outline-twisty {
+  margin-left: 24px;
+}
+.outline-row.level-4 .outline-twisty {
+  margin-left: 36px;
+}
+.outline-row.level-5 .outline-twisty {
+  margin-left: 48px;
+}
+.outline-row.level-6 .outline-twisty {
+  margin-left: 60px;
+}
+
+.outline-empty {
+  padding: 0 8px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ---------- 文件树 ---------- */
+.file-tree {
+  padding: 12px 8px;
+}
+
+.file-tree-head {
+  padding: 0 8px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-tree-empty {
+  padding: 0 8px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.file-tree ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.file-tree-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+  padding: 4px 6px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.file-tree-row:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--hover);
+}
+
+.file-tree-row.active {
+  color: var(--accent);
+  background: var(--hover);
+  font-weight: 600;
+}
+
+.file-tree-row:disabled {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.file-tree-icon {
+  flex: none;
+  width: 14px;
+  font-size: 11px;
+  text-align: center;
+}
+
+.file-tree-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- 内容与状态 ---------- */
+.error {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  max-width: 860px;
+  margin: 0 auto 16px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--bg));
+  border-radius: 8px;
+}
+
+.error-action {
+  flex: none;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: var(--bg);
+  background: var(--danger);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.error-action:hover {
+  filter: brightness(1.1);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.empty h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.empty p {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* ---------- 回到顶部 ---------- */
+/* 默认不挂载式的「消失/出现」会反复触发节点 mount/unmount，连带 hover/focus 样式
+   重渲，是肉眼可见抖动的一条来源。这里改为始终挂载，用 opacity + pointer-events
+   切换显隐，成本是一个 opacity 的 GPU 合成。 */
+.back-to-top {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg-alt);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--text) 14%, transparent);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.back-to-top.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.back-to-top:hover {
+  background: var(--hover);
+}
+
+.back-to-top:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

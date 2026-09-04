@@ -1,0 +1,17 @@
+# 把 cargo 构建产物重定向到工作区之外的 ASCII 目录
+#
+# 原因：在本工作区内构建会被沙箱拦截。cargo 需要频繁改写与删除 target/ 下的
+# 中间产物（*.rcgu.o、lib.rmeta-link、build/*/output 等），这些操作落在工作区内
+# 时报「拒绝访问 (os error 5)」，构建失败。把 target 挪到工作区之外即可正常构建。
+#
+# 注意：早期曾误判为「路径含中文导致 MSVC 链接器 LNK1181 失败」，后经实测推翻——
+# 中文路径本身没有问题，LNK1181 的真正原因是缺少 LIB / INCLUDE 环境变量。
+# 详见 docs/环境准备.md 的「坑二」与「坑三」。
+[build]
+target-dir = "E:/workbuddy/md-reader-target"
+
+# 关掉增量编译。
+# 增量目录的路径会被拼成 \\?\ 长路径形式，在本机同样触发「拒绝访问 (os error 5)」。
+# 构建仍能完成，但每次都刷一条 warning 噪声。dev profile 下本项目 crate 很少，
+# 关掉增量的编译耗时差异可以忽略。
+incremental = false
